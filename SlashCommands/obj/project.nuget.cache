@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "dgSpecHash": "dtYpob1hqbNyLZ6kc8M3qn0SPE1sv+/MWkk2/Td8uit3IpTjv1UZzQyTnhPdnWlsRw8O3c6SYk7b0zCwX8o/XQ==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Joey Shi\\source\\repos\\lc-slash-commands\\SlashCommands\\SlashCommands.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Joey Shi\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\7.0.15\\microsoft.windowsdesktop.app.ref.7.0.15.nupkg.sha512",
+    "C:\\Users\\Joey Shi\\.nuget\\packages\\microsoft.netcore.app.ref\\7.0.15\\microsoft.netcore.app.ref.7.0.15.nupkg.sha512",
+    "C:\\Users\\Joey Shi\\.nuget\\packages\\microsoft.aspnetcore.app.ref\\7.0.15\\microsoft.aspnetcore.app.ref.7.0.15.nupkg.sha512"
+  ],
+  "logs": []
+}
