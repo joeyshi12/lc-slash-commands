@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SlashCommands")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+4f6bc385fc4308dd739f55dc82c28e85ec1fff8a")]
 [assembly: System.Reflection.AssemblyProductAttribute("SlashCommands")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SlashCommands")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
