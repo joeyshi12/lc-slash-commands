@@ -16,13 +16,13 @@ namespace SlashCommands
         const string modVersion = "0.1.0";
         private readonly Harmony harmony = new Harmony(modGUID);
 
-        public static Plugin instance;
+        public static Plugin Instance;
         public static ManualLogSource mls;
         private NetcodeValidator netcodeValidator;
 
         void Awake()
         {
-            instance = this;
+            Instance = this;
 
             netcodeValidator = new NetcodeValidator(modGUID);
             netcodeValidator.PatchAll();

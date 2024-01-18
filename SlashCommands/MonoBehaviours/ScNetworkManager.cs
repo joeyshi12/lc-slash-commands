@@ -1,5 +1,4 @@
 ﻿using GameNetcodeStuff;
-using SlashCommands.Patches;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -7,40 +6,38 @@ namespace SlashCommands.MonoBehaviours
 {
     internal class ScNetworkManager : NetworkBehaviour
     {
-        public static ScNetworkManager instance;
+        public static ScNetworkManager Instance;
 
         void Awake()
         {
-            instance = this;
+            Instance = this;
         }
 
         [ServerRpc(RequireOwnership = false)]
-        public void TeleportPlayerServerRpc(string playerUsername, Location location, SerializableVector3 position)
+        public void TeleportPlayerServerRpc(int playerId, bool isInFactory, SerializableVector3 position)
         {
-            TeleportPlayerClientRpc(playerUsername, location, position);
+            TeleportPlayerClientRpc(playerId, isInFactory, position);
         }
 
         [ClientRpc]
-        public void TeleportPlayerClientRpc(string playerUsername, Location location, SerializableVector3 position)
+        public void TeleportPlayerClientRpc(int playerId, bool isInFactory, SerializableVector3 position)
         {
-            PlayerControllerB playerControllerB = Array.Find(StartOfRound.Instance.allPlayerScripts, (PlayerControllerB script) => script.playerUsername == playerUsername);
+            PlayerControllerB playerControllerB = StartOfRound.Instance.allPlayerScripts[playerId];
             if (playerControllerB == null)
             {
                 return;
             }
-            switch (location) {
-                case Location.Ship:
-                    playerControllerB.isInElevator = true;
-                    playerControllerB.isInHangarShipRoom = true;
-                    playerControllerB.isInsideFactory = false;
-                    break;
-                case Location.Factory:
-                    playerControllerB.isInElevator = false;
-                    playerControllerB.isInHangarShipRoom = false;
-                    playerControllerB.isInsideFactory = true;
-                    break;
-                default:
-                    break;
+            if (isInFactory)
+            {
+                playerControllerB.isInElevator = false;
+                playerControllerB.isInHangarShipRoom = false;
+                playerControllerB.isInsideFactory = true;
+            }
+            else
+            {
+                playerControllerB.isInElevator = true;
+                playerControllerB.isInHangarShipRoom = true;
+                playerControllerB.isInsideFactory = false;
             }
             playerControllerB.averageVelocity = 0f;
             playerControllerB.velocityLastFrame = Vector3.zero;
@@ -56,7 +53,7 @@ namespace SlashCommands.MonoBehaviours
         [ClientRpc]
         private void SpawnExplosionClientRpc(SerializableVector3 position)
         {
-            Landmine.SpawnExplosion(position.ToVector3() + Vector3.up, spawnExplosionEffect: true, killRange: 5.7f, damageRange: 6.4f);
+            Landmine.SpawnExplosion(position.ToVector3(), spawnExplosionEffect: true, killRange: 5.7f, damageRange: 6.4f);
         }
 
         [Serializable]

@@ -1,6 +1,10 @@
-﻿using GameNetcodeStuff;
+﻿using DunGen;
+using GameNetcodeStuff;
 using HarmonyLib;
 using SlashCommands.MonoBehaviours;
+using System.Text;
+using System;
+using TMPro;
 using UnityEngine;
 using static SlashCommands.MonoBehaviours.ScNetworkManager;
 
@@ -11,34 +15,50 @@ namespace SlashCommands.Patches
     {
         [HarmonyPatch("AddChatMessage")]
         [HarmonyPrefix]
-        static void AddChatMessagePrefix(HUDManager __instance, ref string chatMessage, ref string nameOfUserWhoTyped)
+        static bool AddChatMessagePrefix(HUDManager __instance, ref string chatMessage, ref string nameOfUserWhoTyped)
         {
             if (chatMessage[0] != '/')
             {
-                return;
+                return true;
             }
             Plugin.mls.LogInfo(nameOfUserWhoTyped + " executed " + chatMessage);
             string[] args = chatMessage.Split(' ');
             string command = args[0].TrimStart('/');
             switch (command)
             {
+                case "players":
+                    ListPlayers();
+                    break;
                 case "tp":
                     TeleportPlayer(args);
-                    return;
+                    break;
                 case "warp":
                     WarpPlayer(args);
                     break;
+                case "enemies":
+                    ListEnemies();
+                    break;
                 case "spawn":
                     SpawnEntity(args);
-                    break;
-                case "time":
-                    SetTime(args);
                     break;
                 case "explode":
                     ExplodePlayer(args);
                     break;
                 default:
                     break;
+            }
+            return false;
+        }
+
+        private static void ListPlayers()
+        {
+            foreach (PlayerControllerB controller in StartOfRound.Instance.allPlayerScripts)
+            {
+                if (controller.isPlayerControlled)
+                {
+                    string message = string.Format("{0} [clientId={1}]", controller.playerUsername, controller.playerClientId);
+                    HUDManager.Instance.AddTextToChatOnServer(message);
+                }
             }
         }
         
@@ -48,34 +68,13 @@ namespace SlashCommands.Patches
             {
                 return;
             }
-            // TODO: use player indices instead for consistency
-            string targetName = args[1];
-            string destinationName = args[2];
-            PlayerControllerB targetController = null;
-            PlayerControllerB destinationController = null;
-            foreach (PlayerControllerB controller in StartOfRound.Instance.allPlayerScripts)
-            {
-                if (controller.playerUsername == targetName)
-                {
-                    targetController = controller;
-                }
-                if (controller.playerUsername == destinationName)
-                {
-                    destinationController = controller;
-                }
-            }
-            if (targetController == null || destinationController == null)
+            if (!int.TryParse(args[1], out int targetId) || !int.TryParse(args[2], out int destinationId))
             {
                 return;
             }
-            SerializableVector3 position = new SerializableVector3(destinationController.transform.position);
-            if (destinationController.isInHangarShipRoom)
-            {
-                ScNetworkManager.instance.TeleportPlayerServerRpc(targetName, Location.Ship, position);
-            }
-            else
-            {
-                ScNetworkManager.instance.TeleportPlayerServerRpc(targetName, Location.Factory, position);
+            if (StartOfRound.Instance.allPlayerScripts.GetValue(targetId) is PlayerControllerB target && target.isActiveAndEnabled &&
+                StartOfRound.Instance.allPlayerScripts.GetValue(destinationId) is PlayerControllerB destination && destination.isActiveAndEnabled) {
+                ScNetworkManager.Instance.TeleportPlayerServerRpc(targetId, destination.isInsideFactory, new SerializableVector3(destination.transform.position));
             }
         }
 
@@ -85,52 +84,65 @@ namespace SlashCommands.Patches
             {
                 return;
             }
-            string playerUsername = GameNetworkManager.Instance.localPlayerController.playerUsername;
+            PlayerControllerB controller = GameNetworkManager.Instance.localPlayerController;
+            if (!controller.isPlayerControlled)
+            {
+                return;
+            }
             Vector3 position;
             switch (args[1]) {
                 case "ship":
                     position = GameObject.FindObjectOfType<Terminal>().transform.position;
-                    ScNetworkManager.instance.TeleportPlayerServerRpc(playerUsername, Location.Ship, new SerializableVector3(position));
+                    ScNetworkManager.Instance.TeleportPlayerServerRpc((int)controller.playerClientId, false, new SerializableVector3(position));
                     break;
                 case "factory":
                     position = RoundManager.Instance.insideAINodes[0].transform.position;
-                    ScNetworkManager.instance.TeleportPlayerServerRpc(playerUsername, Location.Factory, new SerializableVector3(position));
+                    ScNetworkManager.Instance.TeleportPlayerServerRpc((int)controller.playerClientId, true, new SerializableVector3(position));
                     break;
                 default:
                     break;
             }
         }
 
-        private static void SpawnEntity(string[] args)
+        private static void ListEnemies()
         {
-
+            Plugin.mls.LogInfo(StartOfRound.Instance.currentLevel.name);
+            foreach (SpawnableEnemyWithRarity enemy in StartOfRound.Instance.currentLevel.OutsideEnemies)
+            {
+                Plugin.mls.LogInfo(enemy.enemyType.name);
+            }
+            
         }
 
-        private static void SetTime(string[] args)
+        private static void SpawnEntity(string[] args)
         {
-
+            PlayerControllerB controller = StartOfRound.Instance.localPlayerController;
+            if (Physics.Raycast(controller.transform.position, controller.transform.forward, out RaycastHit hit, 10f, 605030721))
+            {
+                ScNetworkManager.Instance.SpawnExplosionServerRpc(new SerializableVector3(hit.point + Vector3.up));
+                //Start
+                //currentRound.SpawnEnemyOnServer(currentRound.allEnemyVents[Random.Range(0, currentRound.allEnemyVents.Length)].floorNode.position, currentRound.allEnemyVents[i].floorNode.eulerAngles.y, currentLevel.Enemies.IndexOf(enemy));
+                //hit.point
+            }
         }
            
         private static void ExplodePlayer(string[] args)
         {
             if (args.Length < 2)
             {
+                SerializableVector3 explosionPosition = new SerializableVector3(StartOfRound.Instance.localPlayerController.transform.position + Vector3.up);
+                ScNetworkManager.Instance.SpawnExplosionServerRpc(explosionPosition);
                 return;
             }
-            string targetName = args[1];
-            foreach (PlayerControllerB controller in StartOfRound.Instance.allPlayerScripts)
+            if (!int.TryParse(args[1], out int playerId))
             {
-                if (!controller.isPlayerDead && targetName == controller.playerUsername)
-                {
-                    SerializableVector3 explosionPosition = new SerializableVector3(controller.transform.position);
-                    ScNetworkManager.instance.SpawnExplosionServerRpc(explosionPosition);
-                }
+                return;
+            }
+            if (StartOfRound.Instance.allPlayerScripts.GetValue(playerId) is PlayerControllerB controller && controller.isPlayerControlled)
+            {
+                SerializableVector3 explosionPosition = new SerializableVector3(controller.transform.position + Vector3.up);
+                ScNetworkManager.Instance.SpawnExplosionServerRpc(explosionPosition);
             }
         }
-    }
-
-    public enum Location
-    {
-        Ship, Factory
     }
 }
