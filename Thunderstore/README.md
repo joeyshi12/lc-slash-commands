@@ -1,3 +1,10 @@
-# Spring Man Kamikaze
+# Slash Commands
 
-Spring men explode when hitting the player.
+Slash commands that can be executed from the chat.
+
+## Commands
+
+- `tp <target> <destination>`
+- `warp <player> {ship, factory}`
+- `spawn {<entity>, <enemy>}`
+- `explode <player>`
